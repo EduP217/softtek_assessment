@@ -1,0 +1,67 @@
+service: VehiclesService
+frameworkVersion: "3"
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  stage: dev
+  region: us-east-1
+  environment:
+    VehiclesTable: TblVehicles-dev
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+      Resource: "*"
+
+functions:
+  listVehicles:
+    handler: api/vehicles.list
+    memorySize: 128
+    description: List all vehicles stored in the database
+    events:
+      - http: 
+          path: vehicles
+          method: get
+  
+  findVehicle:
+    handler: api/vehicles.find
+    memorySize: 128
+    description: Find a vehicle stored in the database by its ID
+    events:
+      - http: 
+          path: vehicles/{id}
+          method: get
+
+  createVehicle:
+    handler: api/vehicles.create
+    memorySize: 128
+    description: Create a new vehicle information in the database
+    events:
+      - http: 
+          path: vehicles
+          method: post
+
+resources:
+  Resources:
+    VehiclesDynamoDbTable:
+      Type: 'AWS::DynamoDB::Table'
+      DeletionPolicy: Retain
+      Properties:
+        AttributeDefinitions:
+          -
+            AttributeName: "id"
+            AttributeType: "S"   
+        KeySchema:
+          -
+            AttributeName: "id"
+            KeyType: "HASH"
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+        StreamSpecification:
+          StreamViewType: "NEW_AND_OLD_IMAGES"
+        TableName: ${self:provider.environment.VehiclesTable}
